@@ -1,0 +1,6 @@
+{
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false,
+  "ignore": ["**/__pycache__", "**/.git"],
+  "typeCheckingMode": "basic"
+} 

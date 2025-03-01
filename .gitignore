@@ -1,0 +1,85 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.env/
+.venv/
+env.bak/
+venv.bak/
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+# User configuration and data directories
+.config/
+.local/
+.secrets/
+
+# API Keys and Secrets
+api_keys.json
+*_key.json
+*.pem
+*.key
+secrets/
+
+# Local development artifacts
+local_settings.py
+debug.log
+*.db
+*.sqlite3
+*.log
+
+# GTK/GNOME specific
+gtkrc
+.gtkrc-2.0
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Packaging
+*.flatpak
+*.flatpakref
+*.deb
+*.rpm
+*.snap
+
+# Miscellaneous
+.directory  # KDE directory preferences
