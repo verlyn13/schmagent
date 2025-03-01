@@ -31,6 +31,7 @@ class SchmagentWindow(Adw.ApplicationWindow):
         )
         
         self.chat_model = None  # Will be set by the application
+        self.clipboard_manager = None  # Will be set by the application
         self.messages = []
         
         self.setup_ui()
@@ -76,6 +77,12 @@ class SchmagentWindow(Adw.ApplicationWindow):
         input_scroll.set_child(self.text_input)
         input_box.append(input_scroll)
         
+        # Paste from clipboard button
+        self.paste_button = Gtk.Button(label="Paste")
+        self.paste_button.set_tooltip_text("Paste from clipboard")
+        self.paste_button.connect("clicked", self.on_paste_clicked)
+        input_box.append(self.paste_button)
+        
         # Send button
         self.send_button = Gtk.Button(label="Send")
         self.send_button.connect("clicked", self.on_send_clicked)
@@ -90,83 +97,60 @@ class SchmagentWindow(Adw.ApplicationWindow):
         key_controller = Gtk.EventControllerKey()
         key_controller.connect("key-pressed", self.on_key_pressed)
         self.text_input.add_controller(key_controller)
-        
-        # Load clipboard content
-        self.load_clipboard_content()
     
-    def load_clipboard_content(self):
-        """Load content from the clipboard into the text input."""
-        try:
-            # Get the clipboard from the current display
-            clipboard = Gdk.Display.get_default().get_clipboard()
-            
-            # Create a cancellable object to allow cancelling the operation if needed
-            cancellable = Gio.Cancellable()
-            self.clipboard_cancellable = cancellable  # Store for potential later cancellation
-            
-            # Request text from clipboard with proper cancellable and user_data
-            # Note: passing self as user_data to access it in the callback
-            clipboard.read_text_async(cancellable, self.on_clipboard_text_received, self)
-            
-            logger.debug("Clipboard read request initiated")
-        except Exception as e:
-            logger.debug(f"Could not initiate clipboard access: {str(e)}")
-    
-    def on_clipboard_text_received(self, clipboard, result, user_data):
-        """Handle clipboard text when received.
+    def on_paste_clicked(self, button):
+        """Handle the paste button click event."""
+        print(f"Paste button clicked, clipboard_manager: {getattr(self, 'clipboard_manager', None)}")
         
-        This follows the GAsyncReadyCallback signature from GLib:
-        callback(source_object, result, user_data)
-        """
-        try:
-            # The proper way to finish the async operation and get the text
-            text = clipboard.read_text_finish(result)
+        if not hasattr(self, 'clipboard_manager') or self.clipboard_manager is None:
+            print("No clipboard manager available")
+            logger.warning("No clipboard manager available")
+            self.show_toast("Clipboard manager not available")
+            return
             
-            if text:
-                self.buffer.set_text(text, -1)
-                logger.debug("Clipboard content loaded into input")
-            else:
-                # This is not an error - just means clipboard had no text content
-                logger.debug("Clipboard contained no text content")
-                
-        except GLib.Error as e:
-            # Handle specific GLib errors properly
-            if e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
-                # This is expected if we cancelled the operation
-                logger.debug("Clipboard operation was cancelled")
-            elif "Cannot read from empty clipboard" in str(e):
-                # This is a common error in Wayland when clipboard is inaccessible
-                logger.debug(f"Clipboard access issue: {str(e)}")
-                
-                # Consider implementing a fallback method here
-                self._try_clipboard_fallback()
-            else:
-                # Real errors should be logged appropriately
-                logger.warning(f"Error reading clipboard: {str(e)}")
-        except Exception as e:
-            logger.error(f"Unexpected error reading clipboard: {str(e)}")
-
-    def _try_clipboard_fallback(self):
-        """Try alternative approaches to get clipboard content."""
-        try:
-            # Try the primary selection instead (highlighted text)
-            primary = Gdk.Display.get_default().get_primary_clipboard()
-            primary.read_text_async(None, self._on_primary_text_received, self)
-            logger.debug("Trying primary selection as fallback")
-        except Exception as e:
-            logger.debug(f"Primary selection fallback failed: {str(e)}")
-
-    def _on_primary_text_received(self, clipboard, result, user_data):
-        """Handle text from primary selection clipboard."""
-        try:
-            text = clipboard.read_text_finish(result)
-            if text:
-                self.buffer.set_text(text, -1)
-                logger.debug("Primary selection content loaded into input")
-            else:
-                logger.debug("No text in primary selection")
-        except Exception as e:
-            logger.debug(f"Error reading primary selection: {str(e)}")
+        # Use the clipboard manager to get text
+        self.clipboard_manager.get_text(self._handle_clipboard_text)
+        logger.debug("Manual clipboard paste requested")
+    
+    def _handle_clipboard_text(self, text):
+        """Handle text received from clipboard manager."""
+        if text:
+            # Set the text in the input buffer
+            self.buffer.set_text(text, -1)
+            logger.debug("Clipboard content pasted into input")
+        else:
+            # Show a message if no text was available
+            logger.debug("No text content in clipboard")
+            self.show_toast("No text found in clipboard")
+    
+    def show_toast(self, message):
+        """Show a toast notification with the given message."""
+        # In GTK4/libadwaita, we need to create a toast and show it
+        # Since we don't have a toast overlay, we'll just log the message
+        # and show it in the message area as a system message
+        logger.info(f"Toast message: {message}")
+        
+        # Add a temporary message to the UI
+        message_frame = Adw.PreferencesGroup()
+        message_frame.set_title("System")
+        
+        message_label = Gtk.Label()
+        message_label.set_markup(f"<i>{message}</i>")
+        message_label.set_wrap(True)
+        message_label.set_xalign(0)
+        
+        message_frame.add(message_label)
+        self.message_box.append(message_frame)
+        self.scroll_to_bottom()
+        
+        # Remove the message after a few seconds
+        GLib.timeout_add_seconds(3, lambda: self._remove_toast_message(message_frame))
+    
+    def _remove_toast_message(self, message_frame):
+        """Remove a toast message from the UI."""
+        if message_frame in self.message_box:
+            self.message_box.remove(message_frame)
+        return False  # Don't repeat
     
     def on_key_pressed(self, controller, keyval, keycode, state):
         """Handle key press events in the text input."""
@@ -301,3 +285,10 @@ class SchmagentWindow(Adw.ApplicationWindow):
         """Set the chat model to use for generating responses."""
         self.chat_model = model
         logger.info(f"Chat model set to: {model.provider_name}")
+        
+    def set_clipboard_manager(self, manager):
+        """Set the clipboard manager to use for clipboard operations."""
+        print(f"SchmagentWindow.set_clipboard_manager called with manager: {manager}")
+        self.clipboard_manager = manager
+        print(f"SchmagentWindow.clipboard_manager set to: {self.clipboard_manager}")
+        logger.debug("Clipboard manager set")

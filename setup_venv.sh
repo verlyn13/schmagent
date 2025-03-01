@@ -61,9 +61,30 @@ fi
 # Create symbolic link to system GTK libraries
 echo -e "${GREEN}Creating symbolic link to system GTK libraries...${NC}"
 if [ ! -d ".venv/lib/python3.13/site-packages/gi" ]; then
-    ln -s /usr/lib/python3/dist-packages/gi .venv/lib/python3.13/site-packages/
+    # Check different possible locations for the gi module
+    if [ -d "/usr/lib/python3/dist-packages/gi" ]; then
+        ln -s /usr/lib/python3/dist-packages/gi .venv/lib/python3.13/site-packages/
+        echo -e "${GREEN}Linked GTK libraries from /usr/lib/python3/dist-packages/gi${NC}"
+    elif [ -d "/usr/lib64/python3.13/site-packages/gi" ]; then
+        ln -s /usr/lib64/python3.13/site-packages/gi .venv/lib/python3.13/site-packages/
+        echo -e "${GREEN}Linked GTK libraries from /usr/lib64/python3.13/site-packages/gi${NC}"
+    elif [ -d "/usr/lib/python3.13/site-packages/gi" ]; then
+        ln -s /usr/lib/python3.13/site-packages/gi .venv/lib/python3.13/site-packages/
+        echo -e "${GREEN}Linked GTK libraries from /usr/lib/python3.13/site-packages/gi${NC}"
+    else
+        echo -e "${RED}Could not find GTK libraries. Please install them and run this script again.${NC}"
+        echo -e "On Fedora: ${YELLOW}sudo dnf install python3-gobject gtk4 libadwaita${NC}"
+        echo -e "On Ubuntu: ${YELLOW}sudo apt install python3-gi gir1.2-gtk-4.0 libadwaita-1-dev${NC}"
+    fi
+fi
+
+# Create symbolic link to the project directory for development
+echo -e "${GREEN}Creating symbolic link to the project directory...${NC}"
+if [ ! -d ".venv/lib/python3.13/site-packages/schmagent" ]; then
+    ln -s "$(pwd)/schmagent" .venv/lib/python3.13/site-packages/
+    echo -e "${GREEN}Linked schmagent package for development${NC}"
 fi
 
 echo -e "${GREEN}Setup complete!${NC}"
 echo -e "To activate the virtual environment, run: ${YELLOW}source .venv/bin/activate${NC}"
-echo -e "To run the application, run: ${YELLOW}python -m schmagent${NC}" 
+echo -e "To run the application, run: ${YELLOW}python -m schmagent${NC}"

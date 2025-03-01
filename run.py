@@ -43,9 +43,18 @@ if __name__ == "__main__":
         # In normal environment: import and run the main function directly
         logger.info("Running in normal environment, importing main directly")
         try:
-            from schmagent.main import main
+            # Try to import from main.py first
+            try:
+                from schmagent.main import main
+                logger.info("Imported main from schmagent.main")
+            except ImportError:
+                # Fall back to __main__.py if main.py is not found
+                from schmagent.__main__ import main
+                logger.info("Imported main from schmagent.__main__")
+            
             sys.exit(main())
         except ImportError as e:
-            logger.error(f"Failed to import schmagent.main: {e}")
+            logger.error(f"Failed to import schmagent main module: {e}")
             logger.error("Make sure the schmagent package is in your PYTHONPATH")
+            logger.error("Try running: export PYTHONPATH=$PYTHONPATH:$(pwd)")
             sys.exit(1)

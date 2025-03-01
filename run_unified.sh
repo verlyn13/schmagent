@@ -13,7 +13,8 @@ API_KEYS_FILE="${API_KEYS_FILE:-api_keys.json}"
 FULL_API_KEYS_PATH="$SECRETS_PATH/$API_KEYS_FILE"
 
 # Path setup - ensures Python can find the schmagent package
-export PYTHONPATH="$PYTHONPATH:$HOME/Projects/schmagent"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export PYTHONPATH="$PYTHONPATH:$SCRIPT_DIR"
 
 # Development settings
 export LOG_LEVEL="${LOG_LEVEL:-DEBUG}"
@@ -70,4 +71,4 @@ fi
 
 # -- RUN THE APPLICATION --
 echo "Starting Schmagent..."
-python run.py 
+python run.py

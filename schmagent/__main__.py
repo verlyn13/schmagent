@@ -1,16 +1,16 @@
-# schmagent/main.py
-"""Main entry point for the Schmagent application."""
-
-import sys
-import asyncio
-import logging
-import signal
-import os
+#!/usr/bin/env python3
+# schmagent/__main__.py
+"""Main entry point for the Schmagent application when run as a module (python -m schmagent)."""
 
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio, GLib
+import sys
+import asyncio
+import logging
+import signal
+import os
 
 from .ui.window import SchmagentWindow
 from .ui.clipboard import ClipboardManager
@@ -59,7 +59,6 @@ class SchmagentApplication(Adw.Application):
     
     def __init__(self):
         """Initialize the application."""
-        print("SchmagentApplication.__init__ called")
         super().__init__(
             application_id="org.gnome.Schmagent",
             flags=Gio.ApplicationFlags.FLAGS_NONE
@@ -73,25 +72,10 @@ class SchmagentApplication(Adw.Application):
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
         
-        # Set DEBUG level for our specific modules
-        logging.getLogger("schmagent.ui.window").setLevel(logging.DEBUG)
-        logging.getLogger("schmagent.ui.clipboard").setLevel(logging.DEBUG)
-        
         # Initialize properties
         self.window = None
         self.chat_model = None
-        
-        # Initialize clipboard manager
-        try:
-            print("Attempting to initialize clipboard manager")
-            self.clipboard_manager = ClipboardManager(config)
-            if self.clipboard_manager:
-                print(f"Clipboard manager initialized successfully: {self.clipboard_manager}")
-            else:
-                print("Clipboard manager is None after initialization")
-        except Exception as e:
-            print(f"Failed to initialize clipboard manager: {str(e)}")
-            self.clipboard_manager = None
+        self.clipboard_manager = ClipboardManager(config)
         
         # Connect signals
         self.connect("activate", self.on_activate)
@@ -110,14 +94,7 @@ class SchmagentApplication(Adw.Application):
         # Create the main window
         self.window = SchmagentWindow(self)
         self.window.set_chat_model(self.chat_model)
-        
-        # Set the clipboard manager
-        if self.clipboard_manager:
-            print(f"Setting clipboard manager in window: {self.clipboard_manager}")
-            self.window.set_clipboard_manager(self.clipboard_manager)
-            print("Clipboard manager set in window")
-        else:
-            print("Clipboard manager is None, cannot set in window")
+        self.window.set_clipboard_manager(self.clipboard_manager)
         self.window.present()
         
         logger.info("Schmagent window created and presented")
